@@ -1,5 +1,9 @@
+import os
+
+
 class Mock:
     _file: str = None
+    _file_dir = "./MockData/data/"
 
     def __init__(self, file=None):
         self._file = file
@@ -8,7 +12,7 @@ class Mock:
         # Open the file in read mode
         file_path = self.get_file_path()
 
-        if not file_path:
+        if not os.path.exists(file_path):
             raise MockException("File is not set.")
 
         file = open(file_path, "r")
@@ -26,7 +30,7 @@ class Mock:
         if not self._file:
             return ''
 
-        return "./MockData/data/" + self._file
+        return self._file_dir + self._file
 
 
 class MockException(Exception):

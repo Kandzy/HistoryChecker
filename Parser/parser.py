@@ -58,9 +58,9 @@ class Parser:
 
     def _clear_raw_response(self):
         # Remove text between "/backups/epp/epp_logs" and "gz-"
-        return re.sub(r'/backups/epp/epp_logs.*?gz', '', self._response)
+        return re.sub(r'(/backups/epp/epp_logs.*?gz([-:])|--\n)', '', self._response)
 
     def _get_occurrences(self, text):
         # Find all occurrences of the text between "<?xml version="1.0" and </EPP>"
-        return re.findall(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}.*?<\?xml version="1\.0".*?</EPP>',
+        return re.findall(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}.*?<\?xml version="1\.0".+?</EPP>',
                           text, re.DOTALL)

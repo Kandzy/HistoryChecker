@@ -46,6 +46,9 @@ class SSHConnect:
     def get_all_outputs(self):
         return self._outputs
 
+    def clear_output(self):
+        self._outputs = []
+
     def close_connection(self):
         transport = self._client.get_transport()
 

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import getpass
+from MockData.mocking import Mock
 from Parser.parser import Parser
 from SSH.ssh_connect import SSHConnect, SSHConnectionError
 from Config.ssh_config import SSHConfig
@@ -37,7 +38,8 @@ class Client:
         print("1. Check domain EPP history\n"
               "2. Update Config\n"
               "3. Update Password\n"
-              "4. Exit script\n")
+              "4. Execute mocked data\n"
+              "5. Exit script\n")
         command = int(input("Select action: "))
 
         if command == 1:
@@ -47,6 +49,10 @@ class Client:
         elif command == 3:
             self._request_password()
         elif command == 4:
+            filename = input("Mocked Filename: ")
+            mock = Mock(filename)
+            MockEPPHistoryChecker().run_mock(mock)
+        elif command == 5:
             self.exit = True
         else:
             print("\033[31mCommand selection error\033[0m")
@@ -86,20 +92,8 @@ class EPPHistoryChecker:
                 self._get_period()
 
             if self.execute_command:
-                self._build_commands()
-                responses = self._execute_command()
-                parser = Parser()
-
-                for response in responses:
-                    parser.parce_response(self.domain_name, response.get_raw_output())
-                    with open(f"{self.domain_name}_result_raw", 'a') as file:
-                        file.write(response.get_raw_output())
-
-                    occurrences = parser.get_occurrences()
-
-                    for occurrence in occurrences:
-                        with open(f"{self.domain_name}_result_parsed", 'a') as file:
-                            file.write(occurrence+"\n")
+                responses = self._run_execution()
+                self.parse_responses(responses)
 
                 # parser.print_result()
 
@@ -123,6 +117,32 @@ class EPPHistoryChecker:
 
         self._close_connection()
 
+    def _run_execution(self):
+        self._build_commands()
+        responses = self._execute_command()
+        return responses
+
+    def parse_responses(self, responses: list[SSHOutput]):
+        parser = Parser()
+
+        for response in responses:
+            raw_text_response = response.get_raw_output()
+
+            with open(f"{self.domain_name}_result_raw", 'a') as file:
+                file.write(raw_text_response)
+
+            occurrences = self.parce_raw_text(parser, raw_text_response)
+            self.write_parsed_file(occurrences)
+
+    def parce_raw_text(self, parser: Parser, response):
+        parser.parce_response(self.domain_name, response)
+        return parser.get_occurrences()
+
+    def write_parsed_file(self, occurrences):
+        for occurrence in occurrences:
+            with open(f"{self.domain_name}_result_parsed", 'a') as file:
+                file.write(occurrence + "\n")
+
     def _connect_to_ssh(self, ssh_config, password):
         self.ssh = SSHConnect(host=ssh_config.host, login=ssh_config.username, password=password)
 
@@ -143,6 +163,8 @@ class EPPHistoryChecker:
                                  f'.log.{month}*')
 
     def _execute_command(self) -> list[SSHOutput]:
+        self.ssh.clear_output()
+
         for command in self.commands:
             self.ssh.execute(command)
 
@@ -225,3 +247,11 @@ class SSHConfigBuilder:
                 break
             else:
                 print("\033[31mUsername set Incorrectly or empty\033[0m")
+
+
+class MockEPPHistoryChecker(EPPHistoryChecker):
+    def run_mock(self, mock: Mock):
+        self._get_domain()
+        response = mock.get_content()
+        occurrences = self.parce_raw_text(Parser(), response)
+        self.write_parsed_file(occurrences)
