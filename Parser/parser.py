@@ -46,7 +46,7 @@ class Parser:
             if domain_match:
                 domain = domain_match.group(1)
                 self.domain_occurrences.append(occurrence)
-                command_match = re.search(r'(?:CheckDomain|UpdateDomain|DeleteDomain)>', occurrence)
+                command_match = re.search(r'(?:CheckDomain|UpdateDomain|DeleteDomain|RenewDomain|RestoreDomain|RestoreDomainReport)>', occurrence)
 
                 if command_match:
                     trId_match = re.search(r"<trId>(.*?)</trId>", occurrence)
